@@ -1,15 +1,16 @@
 import string
-from lib.search_utils import load_movies
+from lib.search_utils import load_movies, load_stopwords
 
 DEFAULT_SEARCH_LIMIT = 5
 
 def search_command(query):
     result = []
     movies = load_movies()
+    stopwords = load_stopwords()
 
     for movie in movies:
-        query_tokens = tokenize(query)
-        title_tokens = tokenize(movie["title"])
+        query_tokens = tokenize(query, stopwords)
+        title_tokens = tokenize(movie["title"], stopwords)
 
         if has_matching(query_tokens, title_tokens):
             result.append(movie)
@@ -31,11 +32,12 @@ def preprocess_text(text: str):
     clean_text = text.translate(table)
     return clean_text.lower()
 
-def tokenize(text: str):
+def tokenize(text: str, stopwords: list[str] = []):
     clean_text = preprocess_text(text)
     tokens = clean_text.split()
     valid_tokens = []
     for token in tokens:
-        if token:
+        if token and token not in stopwords:
             valid_tokens.append(token)
     return valid_tokens
+
