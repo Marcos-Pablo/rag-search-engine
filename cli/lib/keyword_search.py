@@ -8,18 +8,34 @@ def search_command(query):
     movies = load_movies()
 
     for movie in movies:
-        preprocessed_query = preprocess_text(query)
-        preprocessed_title = preprocess_text(movie["title"])
+        query_tokens = tokenize(query)
+        title_tokens = tokenize(movie["title"])
 
-        if preprocessed_query in preprocessed_title:
+        if has_matching(query_tokens, title_tokens):
             result.append(movie)
-
-        if len(result) >= DEFAULT_SEARCH_LIMIT:
-            break
+            if len(result) >= DEFAULT_SEARCH_LIMIT:
+                break
 
     result.sort(key=lambda movie: movie["title"])
     return result
 
+def has_matching(query_tokens: list[str], title_tokens: list[str]):
+    for query_token in query_tokens:
+        for title_token in title_tokens:
+            if query_token in title_token:
+                return True
+    return False
+
 def preprocess_text(text: str):
     table = str.maketrans("", "", string.punctuation)
-    return text.translate(table).lower()
+    clean_text = text.translate(table)
+    return clean_text.lower()
+
+def tokenize(text: str):
+    clean_text = preprocess_text(text)
+    tokens = clean_text.split()
+    valid_tokens = []
+    for token in tokens:
+        if token:
+            valid_tokens.append(token)
+    return valid_tokens
