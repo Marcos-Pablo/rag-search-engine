@@ -27,7 +27,7 @@ def main() -> None:
 
             result = search_command(args.query)
             for i, res in enumerate(result, 1):
-                print(f"${i}. ({res['id']}) {res['title']}")
+                print(f"{i}. ({res['id']}) {res['title']}")
 
         case _:
             parser.print_help()
