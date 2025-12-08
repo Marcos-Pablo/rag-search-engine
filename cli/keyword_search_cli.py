@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
-from lib.keyword_search import build_command, search_command
-
+from lib.keyword_search import build_command, search_command, tf_command
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Keyword Search CLI")
@@ -13,6 +12,9 @@ def main() -> None:
     search_parser = subparsers.add_parser("search", help="Search movies using BM25")
     search_parser.add_argument("query", type=str, help="Search query")
 
+    term_frequency_parser = subparsers.add_parser("tf", help="Get term frequency for a given document ID and term")
+    term_frequency_parser.add_argument("doc_id", type=int, help="Document ID")
+    term_frequency_parser.add_argument("term", type=str, help="Term to get the frequency for")
 
     args = parser.parse_args()
 
@@ -28,6 +30,12 @@ def main() -> None:
             result = search_command(args.query)
             for i, res in enumerate(result, 1):
                 print(f"{i}. ({res['id']}) {res['title']}")
+
+        case "tf":
+            doc_id, term = args.doc_id, args.term
+            print(f"Getting the term frequency for {term} in document {doc_id}")
+            frequency = tf_command(doc_id, term)
+            print(f"Term frequency of '{term}' in document '{doc_id}': {frequency}")
 
         case _:
             parser.print_help()
