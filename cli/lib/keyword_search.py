@@ -60,7 +60,7 @@ class InvertedIndex:
             return 0
         return self.term_frequencies[doc_id][token]
 
-    def get_idf(self, term: str):
+    def get_idf(self, term: str) -> float:
         tokens = tokenize(term)
         if len(tokens) != 1:
             raise ValueError("Term must be a single token")
@@ -71,6 +71,12 @@ class InvertedIndex:
         idf = math.log((total_doc_count + 1) / (term_match_doc_count + 1))
 
         return idf
+
+    def get_tfidf(self, doc_id: int, term: str) -> float:
+        tf = self.get_tf(doc_id, term)
+        idf = self.get_idf(term)
+
+        return tf * idf
 
     def __add_document(self, doc_id, text, stopwords) -> None:
         tokens = tokenize(text, stopwords)
@@ -114,6 +120,13 @@ def idf_command(term):
     inverted_index.load()
 
     return inverted_index.get_idf(term)
+
+def tfidf_command(doc_id, term):
+    inverted_index = InvertedIndex()
+    inverted_index.load()
+
+    return inverted_index.get_tfidf(doc_id, term)
+
 
 def preprocess_text(text: str):
     table = str.maketrans("", "", string.punctuation)
