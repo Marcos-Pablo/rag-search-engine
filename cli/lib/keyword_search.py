@@ -1,4 +1,4 @@
-import string, pickle, os
+import string, pickle, os, math
 from typing import Counter, DefaultDict
 from nltk.stem import PorterStemmer
 from nltk.util import defaultdict
@@ -60,11 +60,23 @@ class InvertedIndex:
             return 0
         return self.term_frequencies[doc_id][token]
 
+    def get_idf(self, term: str):
+        tokens = tokenize(term)
+        if len(tokens) != 1:
+            raise ValueError("Term must be a single token")
+        token = tokens[0]
+        total_doc_count = len(self.docmap)
+        doc_ids = self.index[token]
+        term_match_doc_count = len(doc_ids)
+        idf = math.log((total_doc_count + 1) / (term_match_doc_count + 1))
+
+        return idf
+
     def __add_document(self, doc_id, text, stopwords) -> None:
         tokens = tokenize(text, stopwords)
         for token in tokens:
             self.index[token].add(doc_id)
-            self.term_frequencies[doc_id][token] += 1
+        self.term_frequencies[doc_id].update(tokens)
 
 def search_command(query):
     inverted_index = InvertedIndex()
@@ -96,6 +108,12 @@ def tf_command(doc_id, term):
 
     frequency = inverted_index.get_tf(doc_id, term)
     return frequency
+
+def idf_command(term):
+    inverted_index = InvertedIndex()
+    inverted_index.load()
+
+    return inverted_index.get_idf(term)
 
 def preprocess_text(text: str):
     table = str.maketrans("", "", string.punctuation)
