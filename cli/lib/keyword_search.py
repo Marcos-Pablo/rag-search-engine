@@ -78,6 +78,15 @@ class InvertedIndex:
 
         return tf * idf
 
+    def get_bm25_idf(self, term: str) -> float:
+        tokens = tokenize(term)
+        if not tokens:
+            raise ValueError("Term must be a single token")
+        token = tokens[0]
+        total_doc_count = len(self.docmap)
+        term_match_count = len(self.index[token])
+        return math.log((total_doc_count - term_match_count + 0.5) / (term_match_count + 0.5) + 1)
+
     def __add_document(self, doc_id, text, stopwords) -> None:
         tokens = tokenize(text, stopwords)
         for token in tokens:
@@ -127,6 +136,11 @@ def tfidf_command(doc_id, term):
 
     return inverted_index.get_tfidf(doc_id, term)
 
+def bm25_idf_command(term):
+    inverted_index = InvertedIndex()
+    inverted_index.load()
+
+    return inverted_index.get_bm25_idf(term)
 
 def preprocess_text(text: str):
     table = str.maketrans("", "", string.punctuation)
