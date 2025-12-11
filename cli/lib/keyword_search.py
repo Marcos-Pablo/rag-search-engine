@@ -2,17 +2,19 @@ import string, pickle, os, math
 from typing import Counter, DefaultDict
 from nltk.stem import PorterStemmer
 from nltk.util import defaultdict
-from lib.search_utils import BM25_K1, CACHE_PATH, DEFAULT_SEARCH_LIMIT, load_movies, load_stopwords
+from lib.search_utils import BM25_B, BM25_K1, CACHE_PATH, DEFAULT_SEARCH_LIMIT, load_movies, load_stopwords
 
 class InvertedIndex:
     def __init__(self) -> None:
         self.index: dict[str, set[int]] = DefaultDict(set)
         self.docmap: dict[int, dict] = {}
         self.term_frequencies: dict[int, Counter[str]] = defaultdict(Counter)
+        self.doc_lengths: dict[int, int] = {}
 
         self.index_path = os.path.join(CACHE_PATH, 'index.pkl')
         self.docmap_path = os.path.join(CACHE_PATH, 'docmap.pkl')
         self.term_frequencies_path = os.path.join(CACHE_PATH, 'term_frequencies.pkl')
+        self.doc_lengths_path = os.path.join(CACHE_PATH, "doc_lengths.pkl")
 
 
     def build(self) -> None:
@@ -36,6 +38,10 @@ class InvertedIndex:
         with open(self.term_frequencies_path, 'wb') as f:
             pickle.dump(self.term_frequencies, f)
 
+        with open(self.doc_lengths_path, 'wb') as f:
+            pickle.dump(self.doc_lengths, f)
+
+
     def load(self) -> None:
         with open(self.index_path, 'rb') as f:
             self.index = pickle.load(f)
@@ -46,6 +52,8 @@ class InvertedIndex:
         with open(self.term_frequencies_path, 'rb') as f:
             self.term_frequencies = pickle.load(f)
 
+        with open(self.doc_lengths_path, 'rb') as f:
+            self.doc_lengths = pickle.load(f)
 
     def get_documents(self, term: str) -> list[int]:
         ids = self.index.get(term, set())
@@ -78,9 +86,13 @@ class InvertedIndex:
 
         return tf * idf
 
-    def get_bm25_tf(self, doc_id, term, k1=BM25_K1) -> float:
+    def get_bm25_tf(self, doc_id, term, k1=BM25_K1, b=BM25_B) -> float:
         tf = self.get_tf(doc_id, term)
-        bm25tf = (tf * (k1 + 1) / (tf + k1))
+        doc_length = self.doc_lengths.get(doc_id, 0)
+        avg_doc_length = self.__get_avg_doc_length()
+        length_norm = 1 - b + b * (doc_length / avg_doc_length) if avg_doc_length != 0 else 1
+
+        bm25tf = (tf * (k1 + 1)) / (tf + k1 * length_norm)
         return bm25tf
 
     def get_bm25_idf(self, term: str) -> float:
@@ -97,6 +109,14 @@ class InvertedIndex:
         for token in tokens:
             self.index[token].add(doc_id)
         self.term_frequencies[doc_id].update(tokens)
+        self.doc_lengths[doc_id] = len(tokens)
+
+    def __get_avg_doc_length(self) -> float:
+        if not self.doc_lengths:
+            return 0.0
+        total = sum(self.doc_lengths.values())
+
+        return total / len(self.doc_lengths)
 
 def search_command(query):
     inverted_index = InvertedIndex()
@@ -141,11 +161,11 @@ def tfidf_command(doc_id, term):
 
     return inverted_index.get_tfidf(doc_id, term)
 
-def bm25_tf_command(doc_id: int, term: str, k1: float = BM25_K1) -> float:
+def bm25_tf_command(doc_id: int, term: str, k1: float = BM25_K1, b=BM25_B) -> float:
     inverted_index = InvertedIndex()
     inverted_index.load()
 
-    return inverted_index.get_bm25_tf(doc_id, term, k1)
+    return inverted_index.get_bm25_tf(doc_id, term, k1, b)
 
 def bm25_idf_command(term):
     inverted_index = InvertedIndex()
