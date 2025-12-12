@@ -2,7 +2,7 @@ import string, pickle, os, math
 from typing import Counter, DefaultDict
 from nltk.stem import PorterStemmer
 from nltk.util import defaultdict
-from lib.search_utils import BM25_B, BM25_K1, CACHE_PATH, DEFAULT_SEARCH_LIMIT, load_movies, load_stopwords
+from lib.search_utils import BM25_B, BM25_K1, CACHE_PATH, DEFAULT_SEARCH_LIMIT, SCORE_PRECISION, load_movies, load_stopwords
 
 class InvertedIndex:
     def __init__(self) -> None:
@@ -104,6 +104,33 @@ class InvertedIndex:
         term_match_count = len(self.index[token])
         return math.log((total_doc_count - term_match_count + 0.5) / (term_match_count + 0.5) + 1)
 
+    def bm25(self, doc_id, term) -> float:
+        bm25_tf = self.get_bm25_tf(doc_id, term)
+        bm25_idf = self.get_bm25_idf(term)
+        return bm25_tf * bm25_idf
+
+    def bm25_search(self, query, limit):
+        tokens = tokenize(query)
+        scores: dict[int, float] = defaultdict(lambda:0)
+
+        for token in tokens:
+            doc_ids = self.index[token]
+            for id in doc_ids:
+                bm25 = self.bm25(id, token)
+                scores[id] += bm25
+
+        top_items = sorted(scores.items(), key=lambda item: item[1], reverse=True)
+        result = []
+        for doc_id, score in top_items:
+            item = dict() 
+            item["id"] = doc_id
+            item["score"] = round(score, SCORE_PRECISION)
+            item["title"] = self.docmap[doc_id]["title"]
+            result.append(item)
+            if len(result) >= limit:
+                break
+        return result
+
     def __add_document(self, doc_id, text, stopwords) -> None:
         tokens = tokenize(text, stopwords)
         for token in tokens:
@@ -137,7 +164,7 @@ def search_command(query):
                 return results
     return results
 
-def build_command():
+def build_command() -> None:
     inverted_index = InvertedIndex()
     inverted_index.build()
     inverted_index.save()
@@ -149,13 +176,13 @@ def tf_command(doc_id, term):
     frequency = inverted_index.get_tf(doc_id, term)
     return frequency
 
-def idf_command(term):
+def idf_command(term) -> float:
     inverted_index = InvertedIndex()
     inverted_index.load()
 
     return inverted_index.get_idf(term)
 
-def tfidf_command(doc_id, term):
+def tfidf_command(doc_id, term) -> float:
     inverted_index = InvertedIndex()
     inverted_index.load()
 
@@ -167,13 +194,19 @@ def bm25_tf_command(doc_id: int, term: str, k1: float = BM25_K1, b=BM25_B) -> fl
 
     return inverted_index.get_bm25_tf(doc_id, term, k1, b)
 
-def bm25_idf_command(term):
+def bm25_idf_command(term) -> float:
     inverted_index = InvertedIndex()
     inverted_index.load()
 
     return inverted_index.get_bm25_idf(term)
 
-def preprocess_text(text: str):
+def bm25_search_command(query: str, limit = 5) -> list[dict]:
+    inverted_index = InvertedIndex()
+    inverted_index.load()
+
+    return inverted_index.bm25_search(query, limit)
+
+def preprocess_text(text: str) -> str:
     table = str.maketrans("", "", string.punctuation)
     clean_text = text.translate(table)
     return clean_text.lower()
