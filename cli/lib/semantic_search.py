@@ -2,7 +2,7 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 import os
 
-from lib.search_utils import CACHE_PATH, load_movies
+from lib.search_utils import CACHE_PATH, DEFAULT_SEARCH_LIMIT, load_movies
 
 class SemanticSearch:
     def __init__(self) -> None:
@@ -39,6 +39,53 @@ class SemanticSearch:
                 return self.embeddings
 
         return self.build_embeddings(documents)
+
+    def search(self, query: str, limit: int):
+        if self.documents is None or self.embeddings is None:
+            raise ValueError("No embeddings loaded. Call `load_or_create_embeddings` first.")
+
+        query_embedding = self.generate_embedding(query)
+        scores: list[tuple[float, dict]] = []
+
+        for doc, doc_embedding in zip(self.documents, self.embeddings):
+            similarity = cosine_similarity(query_embedding, doc_embedding)
+            scores.append((similarity, doc))
+
+        sorted_scores = sorted(scores, key=lambda x: x[0], reverse=True)
+        results = []
+        for score, doc in sorted_scores[:limit]:
+            results.append(
+                {
+                    "score": score,
+                    "title": doc["title"],
+                    "description": doc["description"],
+                }
+            )
+        return results
+
+def search_command(query: str, limit = DEFAULT_SEARCH_LIMIT):
+    sem_search = SemanticSearch()
+    movies = load_movies()
+    sem_search.load_or_create_embeddings(movies)
+    results = sem_search.search(query, limit)
+    print(f"Query: {query}")
+    print(f"Top {len(results)} results:")
+    print()
+
+    for i, result in enumerate(results, 1):
+        print(f"{i}. {result['title']} (score: {result['score']:.4f})")
+        print(f"   {result['description'][:100]}...")
+        print()
+
+def cosine_similarity(vec1, vec2):
+    dot_product = np.dot(vec1, vec2)
+    norm1 = np.linalg.norm(vec1)
+    norm2 = np.linalg.norm(vec2)
+
+    if norm1 == 0 or norm2 == 0:
+        return 0.0
+
+    return dot_product / (norm1 * norm2)
 
 def embed_query_text(query):
     sem_search = SemanticSearch()
