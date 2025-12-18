@@ -83,10 +83,11 @@ def fixed_size_chunking(text: str, chunk_size: int, overlap: int):
     chunks = []
     i = 0
     while i < len(words):
-        start = max(i - overlap, 0)
-        chunk = words[start:start+chunk_size]
+        chunk = words[i:i+chunk_size]
+        if chunks and len(chunk) <= overlap:
+            break
         chunks.append(" ".join(chunk))
-        i += chunk_size
+        i += chunk_size - overlap
     return chunks
 
 def chunk_command(text: str, chunk_size: int = DEFAULT_CHUNK_SIZE, overlap: int = DEFAULT_CHUNK_OVERLAP):
