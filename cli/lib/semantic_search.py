@@ -2,7 +2,7 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 import os
 
-from lib.search_utils import CACHE_PATH, DEFAULT_CHUNK_SIZE, DEFAULT_SEARCH_LIMIT, load_movies
+from lib.search_utils import CACHE_PATH, DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE, DEFAULT_SEARCH_LIMIT, load_movies
 
 class SemanticSearch:
     def __init__(self) -> None:
@@ -77,18 +77,20 @@ def search_command(query: str, limit = DEFAULT_SEARCH_LIMIT):
         print(f"   {result['description'][:100]}...")
         print()
 
-def fixed_size_chunking(text: str, chunk_size: int = DEFAULT_CHUNK_SIZE):
+def fixed_size_chunking(text: str, chunk_size: int, overlap: int):
+    overlap = max(overlap, 0)
     words = text.split()
     chunks = []
     i = 0
     while i < len(words):
-        chunk = words[i:i+chunk_size]
+        start = max(i - overlap, 0)
+        chunk = words[start:start+chunk_size]
         chunks.append(" ".join(chunk))
         i += chunk_size
     return chunks
 
-def chunk_command(text: str, chunk_size: int = DEFAULT_CHUNK_SIZE):
-    chunks = fixed_size_chunking(text, chunk_size)
+def chunk_command(text: str, chunk_size: int = DEFAULT_CHUNK_SIZE, overlap: int = DEFAULT_CHUNK_OVERLAP):
+    chunks = fixed_size_chunking(text, chunk_size, overlap)
     print(f"Chunking {len(text)} characters")
     for i, chunk in enumerate(chunks, 1):
         print(f"{i}. {chunk}")
