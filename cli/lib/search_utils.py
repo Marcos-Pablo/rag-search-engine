@@ -9,7 +9,8 @@ BM25_K1 = 1.5
 BM25_B = 0.75
 SCORE_PRECISION = 3
 DEFAULT_CHUNK_SIZE = 200
-DEFAULT_CHUNK_OVERLAP = 2
+DEFAULT_CHUNK_OVERLAP = 1
+DEFAULT_SEMANTIC_CHUNK_SIZE = 4
 
 def load_movies() -> list[dict]:
     with open(DATA_PATH, 'r') as file:
