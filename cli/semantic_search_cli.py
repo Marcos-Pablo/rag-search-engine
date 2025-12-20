@@ -3,7 +3,7 @@
 import argparse
 
 from lib.search_utils import DEFAULT_CHUNK_SIZE, DEFAULT_SEMANTIC_CHUNK_SIZE
-from lib.semantic_search import chunk_command, embed_query_text, embed_text_command, search_command, semantic_chunk_command, verify_embeddings, verify_model_command
+from lib.semantic_search import chunk_command, embed_chunks_command, embed_query_text, embed_text_command, search_command, semantic_chunk_command, verify_embeddings, verify_model_command
 
 def main():
     parser = argparse.ArgumentParser(description="Semantic Search CLI")
@@ -49,6 +49,8 @@ def main():
         help="Number of words to overlap between chunks",
     )
 
+    subparsers.add_parser("embed_chunks", help="Generate embeddings for chunked documents")
+
     args = parser.parse_args()
 
     match args.command:
@@ -66,6 +68,8 @@ def main():
             chunk_command(args.text, args.chunk_size, args.overlap)
         case "semantic_chunk":
             semantic_chunk_command(args.text, args.max_chunk_size, args.overlap)
+        case "embed_chunks":
+            embed_chunks_command()
         case _:
             parser.print_help()
 
