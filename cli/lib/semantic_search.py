@@ -2,7 +2,7 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 import os, re, json
 
-from lib.search_utils import CACHE_PATH, DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE, DEFAULT_SEARCH_LIMIT, DEFAULT_SEMANTIC_CHUNK_SIZE, load_movies
+from lib.search_utils import CACHE_PATH, DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE, DEFAULT_SEARCH_LIMIT, DEFAULT_SEMANTIC_CHUNK_SIZE, DOCUMENT_PREVIEW_LENGTH, SCORE_PRECISION, load_movies
 
 class SemanticSearch:
     def __init__(self, model_name = "all-MiniLM-L6-v2") -> None:
@@ -87,7 +87,7 @@ class ChunkedSemanticSearch(SemanticSearch):
             return self.chunk_embeddings
         return self.build_chunk_embeddings(documents)
 
-    def build_chunk_embeddings(self, documents: list[dict]):
+    def build_chunk_embeddings(self, documents: list[dict]) -> np.ndarray:
         self.documents = documents
         all_chunks: list[str] = []
         chunk_metadata: list[dict] = []
@@ -112,6 +112,49 @@ class ChunkedSemanticSearch(SemanticSearch):
         with open(self.chunk_metadata_path, 'w') as file:
             json.dump({"chunks": chunk_metadata, "total_chunks": len(all_chunks)}, file, indent=2)
         return self.chunk_embeddings
+
+    def search_chunks(self, query: str, limit: int = 10):
+        if self.chunk_embeddings is None or self.chunk_metadata is None:
+            raise ValueError("No chunk embeddings loaded. Call load_or_create_chunk_embeddings first.")
+
+        query_embedding = self.generate_embedding(query)
+        chunk_scores: list[dict] = []
+        for i, chunk_embedding in enumerate(self.chunk_embeddings):
+            similarity = cosine_similarity(query_embedding, chunk_embedding)
+            chunk_scores.append({
+                "chunk_idx": i,
+                "movie_idx": self.chunk_metadata[i]["movie_idx"],
+                "score": similarity
+            })
+
+        movie_scores: dict[int, float] = {}
+        for chunk_score in chunk_scores:
+            movie_idx = chunk_score["movie_idx"]
+            if movie_idx not in movie_scores or chunk_score["score"] > movie_scores[movie_idx]:
+                movie_scores[movie_idx] = chunk_score["score"]
+
+        sorted_scores_list = sorted(movie_scores.items(), key=lambda item: item[1], reverse=True)
+
+        top_results = []
+        for movie_idx, score in sorted_scores_list[:limit]:
+            doc = self.documents[movie_idx]
+            top_results.append({
+                "id": doc["id"],
+                "title": doc["title"],
+                "document": doc["description"][:DOCUMENT_PREVIEW_LENGTH],
+                "score": round(score, SCORE_PRECISION),
+            })
+
+        return top_results
+
+def search_chunked_command(query: str, limit = DEFAULT_SEARCH_LIMIT):
+    movies = load_movies()
+    chunked_sem_search = ChunkedSemanticSearch()
+    chunked_sem_search.load_or_create_chunk_embeddings(movies)
+    result = chunked_sem_search.search_chunks(query, limit)
+    for i, record in enumerate(result):
+        print(f"\n{i}. {record['title']} (score: {record['score']:.4f})")
+        print(f"   {record['document']}...")
 
 def embed_chunks_command():
     movies = load_movies()
