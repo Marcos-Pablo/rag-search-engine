@@ -1,5 +1,4 @@
 import json, os
-from typing import Any
 
 PROJECT_ROOT = os.getcwd()
 DATA_PATH = os.path.join(PROJECT_ROOT, "data", "movies.json")
@@ -13,7 +12,8 @@ DEFAULT_CHUNK_SIZE = 200
 DEFAULT_CHUNK_OVERLAP = 1
 DEFAULT_SEMANTIC_CHUNK_SIZE = 4
 DOCUMENT_PREVIEW_LENGTH = 100
-DEFAULT_WEIGHTED_SEARCH_ALPHA = 0.5
+DEFAULT_ALPHA = 0.5
+DEFAULT_K = 60
 
 def load_movies() -> list[dict]:
     with open(DATA_PATH, 'r') as file:

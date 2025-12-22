@@ -126,6 +126,7 @@ class InvertedIndex:
             item["id"] = doc_id
             item["score"] = round(score, SCORE_PRECISION)
             item["title"] = self.docmap[doc_id]["title"]
+            item["document"] = self.docmap[doc_id]["description"]
             result.append(item)
             if len(result) >= limit:
                 break
