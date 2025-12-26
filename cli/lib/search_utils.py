@@ -15,13 +15,15 @@ DOCUMENT_PREVIEW_LENGTH = 100
 DEFAULT_ALPHA = 0.5
 DEFAULT_K = 60
 
+
 def load_movies() -> list[dict]:
-    with open(DATA_PATH, 'r') as file:
+    with open(DATA_PATH, "r") as file:
         data = json.load(file)
 
     return data["movies"]
 
+
 def load_stopwords() -> list[str]:
-    with open(STOPWORDS_PATH, 'r') as file:
+    with open(STOPWORDS_PATH, "r") as file:
         content = file.read()
         return content.splitlines()

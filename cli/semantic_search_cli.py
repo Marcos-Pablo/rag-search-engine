@@ -3,7 +3,18 @@
 import argparse
 
 from lib.search_utils import DEFAULT_CHUNK_SIZE, DEFAULT_SEMANTIC_CHUNK_SIZE
-from lib.semantic_search import chunk_command, embed_chunks_command, embed_query_text, embed_text_command, search_chunked_command, search_command, semantic_chunk_command, verify_embeddings, verify_model_command
+from lib.semantic_search import (
+    chunk_command,
+    embed_chunks_command,
+    embed_query_text,
+    embed_text_command,
+    search_chunked_command,
+    search_command,
+    semantic_chunk_command,
+    verify_embeddings,
+    verify_model_command,
+)
+
 
 def main():
     parser = argparse.ArgumentParser(description="Semantic Search CLI")
@@ -11,24 +22,37 @@ def main():
 
     subparsers.add_parser("verify", help="Verify that the embedding model is loaded")
 
-    embed_text_parser = subparsers.add_parser("embed_text", help="Generate an embedding for a single text")
+    embed_text_parser = subparsers.add_parser(
+        "embed_text", help="Generate an embedding for a single text"
+    )
     embed_text_parser.add_argument("text", type=str, help="Text to embed")
 
-    subparsers.add_parser("verify_embeddings", help="Verify that the embeddings are created correctly")
+    subparsers.add_parser(
+        "verify_embeddings", help="Verify that the embeddings are created correctly"
+    )
 
-    embed_query_parser = subparsers.add_parser("embedquery", help="Generate an embedding for a search query")
+    embed_query_parser = subparsers.add_parser(
+        "embedquery", help="Generate an embedding for a search query"
+    )
     embed_query_parser.add_argument("query", type=str, help="Query to embed")
 
-    search_parser = subparsers.add_parser("search", help="Search for movies using semantic search")
+    search_parser = subparsers.add_parser(
+        "search", help="Search for movies using semantic search"
+    )
     search_parser.add_argument("query", type=str, help="Search query")
-    search_parser.add_argument("--limit", type=int, nargs='?', default=5, help="Number of results to return")
+    search_parser.add_argument(
+        "--limit", type=int, nargs="?", default=5, help="Number of results to return"
+    )
 
     chunk_parser = subparsers.add_parser(
         "chunk", help="Split text into fixed-size chunks"
     )
     chunk_parser.add_argument("text", type=str, help="Text to chunk")
     chunk_parser.add_argument(
-        "--chunk-size", type=int, default=DEFAULT_CHUNK_SIZE, help="Size of each chunk in words"
+        "--chunk-size",
+        type=int,
+        default=DEFAULT_CHUNK_SIZE,
+        help="Size of each chunk in words",
     )
     chunk_parser.add_argument(
         "--overlap",
@@ -37,10 +61,15 @@ def main():
         help="Number of words to overlap between chunks",
     )
 
-    semantic_chunk_parser = subparsers.add_parser("semantic_chunk", help="Split text into semantic chunks")
+    semantic_chunk_parser = subparsers.add_parser(
+        "semantic_chunk", help="Split text into semantic chunks"
+    )
     semantic_chunk_parser.add_argument("text", type=str, help="Text to chunk")
     semantic_chunk_parser.add_argument(
-        "--max-chunk-size", type=int, default=DEFAULT_SEMANTIC_CHUNK_SIZE, help="Max size of each chunk in words"
+        "--max-chunk-size",
+        type=int,
+        default=DEFAULT_SEMANTIC_CHUNK_SIZE,
+        help="Max size of each chunk in words",
     )
     semantic_chunk_parser.add_argument(
         "--overlap",
@@ -49,11 +78,17 @@ def main():
         help="Number of words to overlap between chunks",
     )
 
-    subparsers.add_parser("embed_chunks", help="Generate embeddings for chunked documents")
+    subparsers.add_parser(
+        "embed_chunks", help="Generate embeddings for chunked documents"
+    )
 
-    search_chunked_parser = subparsers.add_parser("search_chunked", help="Search using chunked embeddings")
+    search_chunked_parser = subparsers.add_parser(
+        "search_chunked", help="Search using chunked embeddings"
+    )
     search_chunked_parser.add_argument("query", type=str, help="Search query")
-    search_chunked_parser.add_argument("--limit", type=int, nargs='?', default=5, help="Number of results to return")
+    search_chunked_parser.add_argument(
+        "--limit", type=int, nargs="?", default=5, help="Number of results to return"
+    )
 
     args = parser.parse_args()
 
@@ -78,6 +113,7 @@ def main():
             search_chunked_command(args.query, args.limit)
         case _:
             parser.print_help()
+
 
 if __name__ == "__main__":
     main()
