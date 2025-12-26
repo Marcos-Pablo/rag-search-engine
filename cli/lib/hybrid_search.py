@@ -1,8 +1,16 @@
 import os
-
+from typing import Optional
+from lib.query_enhancement import enhance_query
 from lib.search_utils import DEFAULT_K, DEFAULT_SEARCH_LIMIT, DEFAULT_ALPHA, load_movies
 from .keyword_search import InvertedIndex
 from .semantic_search import ChunkedSemanticSearch
+from dotenv import load_dotenv
+from google import genai
+
+load_dotenv()
+api_key = os.environ.get("GEMINI_API_KEY")
+client = genai.Client(api_key=api_key)
+model = "gemini-2.0-flash-001"
 
 
 class HybridSearch:
@@ -109,7 +117,17 @@ class HybridSearch:
         return top_results[:limit]
 
 
-def rrf_search_command(query: str, k=DEFAULT_K, limit=DEFAULT_SEARCH_LIMIT):
+def rrf_search_command(
+    query: str,
+    k=DEFAULT_K,
+    limit=DEFAULT_SEARCH_LIMIT,
+    enhance: Optional[str] = None,
+):
+    if enhance:
+        enhanced_query = enhance_query(query, method=enhance)
+        print(f"Enhanced query ({enhance}): '{query}' -> '{enhanced_query}'\n")
+        query = enhanced_query
+
     movies = load_movies()
     hybrid_search = HybridSearch(movies)
     result = hybrid_search.rrf_search(query, k, limit)
