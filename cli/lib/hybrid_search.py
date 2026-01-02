@@ -1,7 +1,14 @@
 import os
 from typing import Optional
+from lib.reranking import rerank
 from lib.query_enhancement import enhance_query
-from lib.search_utils import DEFAULT_K, DEFAULT_SEARCH_LIMIT, DEFAULT_ALPHA, load_movies
+from lib.search_utils import (
+    DEFAULT_K,
+    DEFAULT_SEARCH_LIMIT,
+    DEFAULT_ALPHA,
+    SEARCH_MULTIPLIER,
+    load_movies,
+)
 from .keyword_search import InvertedIndex
 from .semantic_search import ChunkedSemanticSearch
 from dotenv import load_dotenv
@@ -75,7 +82,12 @@ class HybridSearch:
         )
         return top_results[:limit]
 
-    def rrf_search(self, query: str, k: int, limit=10):
+    def rrf_search(
+        self,
+        query: str,
+        k: int,
+        limit=10,
+    ):
         bm25_result = self._bm25_search(query, limit * 500)
         semantic_result = self.semantic_search.search_chunks(query, limit * 500)
         combined_scores = {}
@@ -122,18 +134,25 @@ def rrf_search_command(
     k=DEFAULT_K,
     limit=DEFAULT_SEARCH_LIMIT,
     enhance: Optional[str] = None,
+    rerank_method: Optional[str] = None,
 ):
     if enhance:
         enhanced_query = enhance_query(query, method=enhance)
         print(f"Enhanced query ({enhance}): '{query}' -> '{enhanced_query}'\n")
         query = enhanced_query
-
+    search_limit = limit * SEARCH_MULTIPLIER if rerank_method else limit
     movies = load_movies()
     hybrid_search = HybridSearch(movies)
-    result = hybrid_search.rrf_search(query, k, limit)
+    result = hybrid_search.rrf_search(query, k, search_limit)
+    if rerank_method:
+        print("Reranking top 3 results using individual method...")
+        rerank(query, result, rerank_method)
+
     print(f"Reciprocal Rank Fusion Results for '{query}' (k={k}):")
     for i, res in enumerate(result, 1):
         print(f"{i}. {res['title']}")
+        if rerank_method == "individual":
+            print(f"   Rerank score: {res.get('individual_score', 0):.3f}/10")
         print(f"   RRF Score: {res.get('rrf_score', 0):.3f}")
         print(
             f"   BM25 Rank: {res['bm25_rank']}, Semantic Rank: {res['semantic_rank']}"
