@@ -1,4 +1,4 @@
-import os, time
+import os, time, json
 
 from dotenv import load_dotenv
 from google import genai
@@ -10,6 +10,7 @@ model = "gemini-2.0-flash"
 
 
 def llm_rerank_individual(query: str, docs: list[dict], limit: int = 5):
+    scored_docs = []
     for doc in docs:
         prompt = f"""Rate how well this movie matches the search query.
 
@@ -26,16 +27,56 @@ def llm_rerank_individual(query: str, docs: list[dict], limit: int = 5):
 
     Score:"""
         response = client.models.generate_content(model=model, contents=prompt)
-        new_score = (response.text or "").strip().strip('"')
-        doc["individual_score"] = float(new_score) if new_score else doc["rrf_score"]
+        score_text = (response.text or "").strip()
+        score = int(score_text)
+        scored_docs.append({**doc, "individual_score": score})
         time.sleep(3)
-    docs.sort(key=lambda x: x["individual_score"], reverse=True)
+    scored_docs.sort(key=lambda x: x["individual_score"], reverse=True)
     return docs[:limit]
 
 
-def rerank(query: str, docs: list[dict], method: str = "batch", limit: int = 5):
+def llm_rerank_batch(query: str, docs: list[dict], limit: int = 5):
+    doc_list = []
+    doc_map = {}
+    for doc in docs:
+        doc_id = doc["doc_id"]
+        doc_map[doc_id] = doc
+        doc_list.append(
+            f"{doc_id}: {doc.get('title', '')} - {doc.get('document', '')[:200]}"
+        )
+
+    doc_list_str = "\n".join(doc_list)
+    prompt = f"""Rank these movies by relevance to the search query.
+
+Query: "{query}"
+
+Movies:
+{doc_list_str}
+
+Return ONLY the IDs in order of relevance (best match first). Return a valid JSON list, nothing else, do not even wrap the answer with formatting like ```json```. For example:
+
+[75, 12, 34, 2, 1]
+"""
+    response = client.models.generate_content(model=model, contents=prompt)
+    ranking_text = (response.text or "").strip()
+    parsed_ids = json.loads(ranking_text)
+    reranked = []
+    for i, doc_id in enumerate(parsed_ids):
+        if doc_id in doc_map:
+            reranked.append(
+                {**doc_map[doc_id], "batch_score": i + 1},
+            )
+
+    return reranked[:limit]
+
+
+def rerank(
+    query: str, docs: list[dict], method: str = "batch", limit: int = 5
+) -> list[dict]:
     match method:
         case "individual":
-            llm_rerank_individual(query, docs, limit)
+            return llm_rerank_individual(query, docs, limit)
+        case "batch":
+            return llm_rerank_batch(query, docs, limit)
         case _:
-            pass
+            return docs[:limit]

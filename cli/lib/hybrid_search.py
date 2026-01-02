@@ -96,6 +96,7 @@ class HybridSearch:
             doc_id = item["id"]
             if doc_id not in combined_scores:
                 combined_scores[doc_id] = {
+                    "doc_id": doc_id,
                     "title": item["title"],
                     "document": item["document"],
                     "bm25_rank": None,
@@ -111,6 +112,7 @@ class HybridSearch:
             doc_id = item["id"]
             if doc_id not in combined_scores:
                 combined_scores[doc_id] = {
+                    "doc_id": doc_id,
                     "title": item["title"],
                     "document": item["document"],
                     "bm25_rank": None,
@@ -145,14 +147,16 @@ def rrf_search_command(
     hybrid_search = HybridSearch(movies)
     result = hybrid_search.rrf_search(query, k, search_limit)
     if rerank_method:
-        print("Reranking top 3 results using individual method...")
-        rerank(query, result, rerank_method)
+        print(f"Reranking top {limit} results using {rerank_method} method...\n")
+        result = rerank(query, result, rerank_method, limit)
 
     print(f"Reciprocal Rank Fusion Results for '{query}' (k={k}):")
     for i, res in enumerate(result, 1):
         print(f"{i}. {res['title']}")
         if rerank_method == "individual":
             print(f"   Rerank score: {res.get('individual_score', 0):.3f}/10")
+        if rerank_method == "batch":
+            print(f"   Rerank rank: {res.get('batch_score', 0)}")
         print(f"   RRF Score: {res.get('rrf_score', 0):.3f}")
         print(
             f"   BM25 Rank: {res['bm25_rank']}, Semantic Rank: {res['semantic_rank']}"
