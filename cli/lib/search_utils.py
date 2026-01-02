@@ -2,6 +2,7 @@ import json, os
 
 PROJECT_ROOT = os.getcwd()
 DATA_PATH = os.path.join(PROJECT_ROOT, "data", "movies.json")
+GOLDEN_DATA_PATH = os.path.join(PROJECT_ROOT, "data", "golden_dataset.json")
 STOPWORDS_PATH = os.path.join(PROJECT_ROOT, "data", "stopwords.txt")
 CACHE_PATH = os.path.join(PROJECT_ROOT, "cache")
 DEFAULT_SEARCH_LIMIT = 5
@@ -22,6 +23,13 @@ def load_movies() -> list[dict]:
         data = json.load(file)
 
     return data["movies"]
+
+
+def load_golden_dataset() -> dict:
+    with open(GOLDEN_DATA_PATH, "r") as file:
+        data = json.load(file)
+
+    return data
 
 
 def load_stopwords() -> list[str]:

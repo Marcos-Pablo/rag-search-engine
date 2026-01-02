@@ -149,22 +149,7 @@ def rrf_search_command(
     if rerank_method:
         print(f"Reranking top {limit} results using {rerank_method} method...\n")
         result = rerank(query, result, rerank_method, limit)
-
-    print(f"Reciprocal Rank Fusion Results for '{query}' (k={k}):")
-    for i, res in enumerate(result, 1):
-        print(f"{i}. {res['title']}")
-        if rerank_method == "individual":
-            print(f"   Rerank score: {res.get('individual_score', 0):.3f}/10")
-        if rerank_method == "batch":
-            print(f"   Rerank rank: {res.get('batch_score', 0)}")
-        if rerank_method == "cross_encoder":
-            print(f"   Rerank score: {res.get('cross_encoder_score', 0):.3f}")
-        print(f"   RRF Score: {res.get('rrf_score', 0):.3f}")
-        print(
-            f"   BM25 Rank: {res['bm25_rank']}, Semantic Rank: {res['semantic_rank']}"
-        )
-        print(f"   {res['document'][:100]}...")
-        print()
+    return result[:limit]
 
 
 def rrf_score(rank, k=60):

@@ -66,9 +66,24 @@ def main() -> None:
         case "weighted-search":
             weighted_search_command(args.query, args.alpha, args.limit)
         case "rrf-search":
-            rrf_search_command(
+            result = rrf_search_command(
                 args.query, args.k, args.limit, args.enhance, args.rerank_method
             )
+            print(f"Reciprocal Rank Fusion Results for '{args.query}' (k={args.k}):")
+            for i, res in enumerate(result, 1):
+                print(f"{i}. {res['title']}")
+                if args.rerank_method == "individual":
+                    print(f"   Rerank score: {res.get('individual_score', 0):.3f}/10")
+                if args.rerank_method == "batch":
+                    print(f"   Rerank rank: {res.get('batch_score', 0)}")
+                if args.rerank_method == "cross_encoder":
+                    print(f"   Rerank score: {res.get('cross_encoder_score', 0):.3f}")
+                print(f"   RRF Score: {res.get('rrf_score', 0):.3f}")
+                print(
+                    f"   BM25 Rank: {res['bm25_rank']}, Semantic Rank: {res['semantic_rank']}"
+                )
+                print(f"   {res['document'][:100]}...")
+                print()
         case _:
             parser.print_help()
 
