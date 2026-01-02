@@ -157,6 +157,8 @@ def rrf_search_command(
             print(f"   Rerank score: {res.get('individual_score', 0):.3f}/10")
         if rerank_method == "batch":
             print(f"   Rerank rank: {res.get('batch_score', 0)}")
+        if rerank_method == "cross_encoder":
+            print(f"   Rerank score: {res.get('cross_encoder_score', 0):.3f}")
         print(f"   RRF Score: {res.get('rrf_score', 0):.3f}")
         print(
             f"   BM25 Rank: {res['bm25_rank']}, Semantic Rank: {res['semantic_rank']}"
