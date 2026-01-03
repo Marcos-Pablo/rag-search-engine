@@ -138,6 +138,7 @@ def rrf_search_command(
     enhance: Optional[str] = None,
     rerank_method: Optional[str] = None,
 ):
+    print(f"Original query: {query}")
     if enhance:
         enhanced_query = enhance_query(query, method=enhance)
         print(f"Enhanced query ({enhance}): '{query}' -> '{enhanced_query}'\n")
@@ -146,10 +147,15 @@ def rrf_search_command(
     movies = load_movies()
     hybrid_search = HybridSearch(movies)
     result = hybrid_search.rrf_search(query, k, search_limit)
+    print("Results before reranking:")
+    for i, res in enumerate(result, 1):
+        print(f"{i}. {res['title']}")
+        print()
+
     if rerank_method:
         print(f"Reranking top {limit} results using {rerank_method} method...\n")
         result = rerank(query, result, rerank_method, limit)
-    return result[:limit]
+    return result
 
 
 def rrf_score(rank, k=60):
