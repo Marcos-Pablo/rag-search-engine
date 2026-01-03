@@ -57,6 +57,34 @@ Provide a comprehensive 3–4 sentence answer that combines information from mul
     return (response.text or "").strip()
 
 
+def generate_answer_with_citations(search_results, query: str, limit=5):
+    documents = []
+
+    for result in search_results[:limit]:
+        documents.append(f"{result['title']}: {result['document']}")
+    prompt = f"""Answer the question or provide information based on the provided documents.
+
+This should be tailored to Hoopla users. Hoopla is a movie streaming service.
+
+If not enough information is available to give a good answer, say so but give as good of an answer as you can while citing the sources you have.
+
+Query: {query}
+
+Documents:
+{documents}
+
+Instructions:
+- Provide a comprehensive answer that addresses the query
+- Cite sources using [1], [2], etc. format when referencing information
+- If sources disagree, mention the different viewpoints
+- If the answer isn't in the documents, say "I don't have enough information"
+- Be direct and informative
+
+Answer:"""
+    response = client.models.generate_content(model=model, contents=prompt)
+    return (response.text or "").strip()
+
+
 def rag(query, limit=DEFAULT_SEARCH_LIMIT):
     movies = load_movies()
     hybrid_search = HybridSearch(movies)
@@ -105,9 +133,37 @@ def summarize(query: str, limit=DEFAULT_SEARCH_LIMIT):
     }
 
 
+def generate_citations(query: str, limit=DEFAULT_SEARCH_LIMIT):
+    movies = load_movies()
+    hybrid_search = HybridSearch(movies)
+
+    search_results = hybrid_search.rrf_search(
+        query, k=RRF_K, limit=limit * SEARCH_MULTIPLIER
+    )
+
+    if not search_results:
+        return {
+            "query": query,
+            "search_results": [],
+            "error": "No results found",
+        }
+
+    answer = generate_answer_with_citations(search_results, query, limit)
+
+    return {
+        "query": query,
+        "search_results": search_results[:limit],
+        "answer": answer,
+    }
+
+
 def rag_command(query: str):
     return rag(query)
 
 
 def summarize_command(query: str, limit: int = DEFAULT_SEARCH_LIMIT):
     return summarize(query, limit)
+
+
+def citations_command(query: str, limit: int = DEFAULT_SEARCH_LIMIT):
+    return generate_citations(query, limit)
