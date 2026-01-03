@@ -16,6 +16,7 @@ DOCUMENT_PREVIEW_LENGTH = 100
 DEFAULT_ALPHA = 0.5
 DEFAULT_K = 60
 SEARCH_MULTIPLIER = 5
+RRF_K = 60
 
 
 def load_movies() -> list[dict]:
