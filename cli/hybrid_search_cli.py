@@ -57,6 +57,11 @@ def main() -> None:
         choices=["individual", "batch", "cross_encoder"],
         help="Reranking method",
     )
+    rrf_search_parser.add_argument(
+        "--evaluate",
+        action="store_true",
+        help="Flags if the result should be evaluated by an LLM",
+    )
 
     args = parser.parse_args()
 
@@ -67,7 +72,12 @@ def main() -> None:
             weighted_search_command(args.query, args.alpha, args.limit)
         case "rrf-search":
             result = rrf_search_command(
-                args.query, args.k, args.limit, args.enhance, args.rerank_method
+                args.query,
+                args.k,
+                args.limit,
+                args.enhance,
+                args.rerank_method,
+                args.evaluate,
             )
             print(f"Reciprocal Rank Fusion Results for '{args.query}' (k={args.k}):")
             for i, res in enumerate(result, 1):

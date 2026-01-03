@@ -1,5 +1,6 @@
 import os
 from typing import Optional
+from lib.curation import llm_evaluate
 from lib.reranking import rerank
 from lib.query_enhancement import enhance_query
 from lib.search_utils import (
@@ -137,6 +138,7 @@ def rrf_search_command(
     limit=DEFAULT_SEARCH_LIMIT,
     enhance: Optional[str] = None,
     rerank_method: Optional[str] = None,
+    evaluate: bool = False,
 ):
     print(f"Original query: {query}")
     if enhance:
@@ -155,6 +157,9 @@ def rrf_search_command(
     if rerank_method:
         print(f"Reranking top {limit} results using {rerank_method} method...\n")
         result = rerank(query, result, rerank_method, limit)
+    if evaluate:
+        llm_evaluate(query, result)
+
     return result
 
 
